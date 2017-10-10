@@ -212,7 +212,7 @@ func (closureContext *teardownNamespaceClosureContext) run(_ ns.NetNS) error {
 	}
 
 	deviceName := link.Attrs().Name
-	log.Debugf("Found link device as: %s", deviceName)
+	log.Debugf("Found link device as (hardware address=%s): %s", closureContext.hardwareAddr, deviceName)
 
 	// Stop the dhclient process for IPV4 address
 	err = closureContext.dhclient.Stop(deviceName, ipRev4,
@@ -230,7 +230,7 @@ func (closureContext *teardownNamespaceClosureContext) run(_ ns.NetNS) error {
 		}
 	}
 
-	log.Infof("Cleaned up dhclient")
+	log.Infof("Cleaned up dhclient for device(hardware address=%s): %s", closureContext.hardwareAddr, deviceName)
 	return nil
 }
 

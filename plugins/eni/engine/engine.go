@@ -232,12 +232,16 @@ func (engine *engine) GetIPV6Gateway(deviceName string) (string, error) {
 		engine.maxTicksForRetrievingIPV6Gateway, engine.ipv6GatewayTickDuration)
 }
 
-func (engine *engine) getIPV6GatewayIPFromRoutes(link netlink.Link, deviceName string, maxTicks int, durationBetweenTicks time.Duration) (string, error) {
+func (engine *engine) getIPV6GatewayIPFromRoutes(link netlink.Link,
+	deviceName string,
+	maxTicks int,
+	durationBetweenTicks time.Duration) (string, error) {
 	// In rare cases, it is possible that there's a delay in the kernel updating
 	// its routing table for non-primary ENIs attached to the instance. Retry querying
 	// the routing table for such scenarios.
 	for numTicks := 0; numTicks < maxTicks; numTicks++ {
-		log.Infof("Trying to get IPV6 Gateway from route table, attempt: %d/%d", numTicks+1, maxTicks)
+		log.Infof("Trying to get IPV6 Gateway from route table (device=%s), attempt: %d/%d",
+			deviceName, numTicks+1, maxTicks)
 		gateway, ok, err := engine.getIPV6GatewayIPFromRoutesOnce(link, deviceName)
 		if err != nil {
 			return "", err
@@ -270,7 +274,7 @@ func (engine *engine) getIPV6GatewayIPFromRoutesOnce(link netlink.Link, deviceNa
 		if (route.Dst == nil || route.Dst.String() == zeroLengthIPString) && // Dst is not set
 			route.Src.String() == zeroLengthIPString && // Src is not set
 			route.Gw.String() != zeroLengthIPString { // Gw is set
-			log.Debugf("Found ipv6 gateway: %s", route.Gw.String())
+			log.Debugf("Found ipv6 gateway (device=%s): %s", deviceName, route.Gw.String())
 			return route.Gw.String(), true, nil
 		}
 	}
