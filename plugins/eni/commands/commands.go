@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/aws/amazon-ecs-cni-plugins/pkg/utils"
+	"github.com/aws/amazon-ecs-cni-plugins/pkg/utils/cidr"
 	"github.com/aws/amazon-ecs-cni-plugins/plugins/eni/engine"
 	"github.com/aws/amazon-ecs-cni-plugins/plugins/eni/types"
 
@@ -73,12 +74,14 @@ func add(args *skel.CmdArgs, engine engine.Engine, dhclient engine.DHClient) err
 		return dhclientNotFoundError
 	}
 
-	macAddressOfENI, err := getAndVerifyENIMetadata(conf, engine, ec2InstanceMetadataTimeout)
-	if err != nil {
-		return err
-	}
-	log.Infof("Found ENI with mac address on the host (id=%s): %s", conf.ENIID, macAddressOfENI)
-
+	/*
+		macAddressOfENI, err := getAndVerifyENIMetadata(conf, engine, ec2InstanceMetadataTimeout)
+		if err != nil {
+			return err
+		}
+		log.Infof("Found ENI with mac address on the host (id=%s): %s", conf.ENIID, macAddressOfENI)
+	*/
+	macAddressOfENI := conf.MACAddress
 	// Get the interface name of the device by scanning links
 	networkDeviceName, err := engine.GetInterfaceDeviceName(macAddressOfENI)
 	if err != nil {
@@ -87,9 +90,17 @@ func add(args *skel.CmdArgs, engine engine.Engine, dhclient engine.DHClient) err
 	}
 	log.Infof("Found network device for the ENI (mac address=%s): %s", macAddressOfENI, networkDeviceName)
 
-	// Get the ipv4 gateway and subnet mask for the ENI. This will be
-	// required for adding routes in the container's namespace
-	ipv4Gateway, ipv4Netmask, err := engine.GetIPV4GatewayNetmask(macAddressOfENI)
+	ipv4Gateway := ""
+	ipv4Netmask := ""
+
+	if conf.SubnetGatewayIPV4Address != "" {
+		ipv4Gateway, ipv4Netmask, err = cidr.GetIPV4GatewayNetmask(conf.SubnetGatewayIPV4Address)
+	} else {
+		// Get the ipv4 gateway and subnet mask for the ENI. This will be
+		// required for adding routes in the container's namespace
+		ipv4Gateway, ipv4Netmask, err = engine.GetIPV4GatewayNetmask(macAddressOfENI)
+	}
+
 	if err != nil {
 		log.Errorf("Unable to get ipv4 gateway and netmask for ENI (device name=%s): %v", networkDeviceName, err)
 		return err

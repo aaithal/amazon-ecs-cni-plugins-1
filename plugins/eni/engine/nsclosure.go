@@ -186,6 +186,8 @@ func (closureContext *setupNamespaceClosureContext) run(_ ns.NetNS) error {
 	// Start dhclient for IPV4 address
 	err = closureContext.dhclient.Start(closureContext.ifName, closureContext.macAddress, ipRev4)
 	if err != nil {
+		log.Warnf("Ignoring error starting dhclient for %s %s: %v", closureContext.ifName,
+			closureContext.macAddress, err)
 		return err
 	}
 
@@ -261,6 +263,9 @@ func getLinkByHardwareAddress(netLink netlinkwrapper.NetLink, hardwareAddr net.H
 		// TODO: Evaluate if reflect.DeepEqual is a better alternative here
 		if link.Attrs().HardwareAddr.String() == hardwareAddr.String() {
 			return link, nil
+		} else {
+			log.Infof("Looking for mac: [%s]; Found: [%s]", hardwareAddr.String(),
+				link.Attrs().HardwareAddr.String())
 		}
 	}
 
